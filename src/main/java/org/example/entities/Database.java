@@ -1,5 +1,7 @@
 package org.example.entities;
 
+import org.example.dao.DaoAccessMethods;
+import org.example.dao.DaoArrow;
 import org.example.entities.Row;
 import org.example.entities.Table;
 
@@ -9,9 +11,18 @@ import java.util.function.Predicate;
 public class Database {
     private final Map<String, Table> tables;
     private Row row;
+    private final DaoAccessMethods dao = new DaoArrow();
 
     public Database() {
         this.tables = new HashMap<>();
+    }
+
+    public boolean save(Table table) {
+        return dao.saveTable(table);
+    }
+
+    public Table read(String tableName) {
+        return dao.read(tableName);
     }
 
     public Table createTable(String name, Table.Builder builder) {
@@ -19,6 +30,7 @@ public class Database {
             throw new IllegalArgumentException("Table already exists: " + name);
         }
         Table table = builder.build();
+        table.setName(name);
         tables.put(name, table);
         return table;
     }
@@ -27,9 +39,9 @@ public class Database {
         Row row = table.find(primaryKeyValue).copy();
         if (!table.relationShips.isEmpty()) {
             for (Map.Entry<String, String> r : table.relationShips.entrySet()) {
-                Object primkey = row.get(r.getKey());
+                Object primaryKey = row.get(r.getKey());
                 Table relTable = tables.get(r.getValue());
-                Row relRow = relTable.find(primkey);
+                Row relRow = relTable.find(primaryKey);
                 row.set(r.getKey(), relRow);
             }
         }

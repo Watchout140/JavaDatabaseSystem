@@ -71,5 +71,8 @@ public class Main {
 
         Row student = studentTable.findFirst(row -> row.get("name").equals("Vincent Hedblom"));
         System.out.println("STUIDENT: " + student);
+
+        db.save(studentTable);
+        db.read("Student_t");
     }
 }

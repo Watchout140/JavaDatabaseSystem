@@ -6,8 +6,7 @@ import org.example.entities.Table;
 import java.util.Map;
 
 public interface DaoAccessMethods {
-    boolean save(String table, Row row);
+    boolean saveTable(Table table);
     boolean delete(String table, Object id);
-    boolean update(String table, Row row);
-    Map<String, Table> read();
+    Table read(String tableName);
 }

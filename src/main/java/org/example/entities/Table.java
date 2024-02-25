@@ -1,9 +1,20 @@
 package org.example.entities;
 
+import org.apache.arrow.memory.RootAllocator;
+import org.apache.arrow.vector.IntVector;
+import org.apache.arrow.vector.types.pojo.ArrowType;
+import org.apache.arrow.vector.types.pojo.Field;
+import org.apache.arrow.vector.types.pojo.FieldType;
+import org.apache.arrow.vector.types.pojo.Schema;
 import org.example.datastructures.IndexStrategy;
 import org.example.datastructures.IndexStrategyStream;
 import org.example.datastructures.SpeedStreamInterface;
 import org.example.enums.DataType;
+
+import org.apache.arrow.vector.*;
+
+import java.util.List;
+import java.util.Map;
 
 import java.util.*;
 
@@ -12,12 +23,21 @@ import java.util.function.Predicate;
 public class Table {
     private final Map<String, Column<?, ?>> columns;
     private final String primaryKey;
+    private String tableName = "Unknown";
     Map<String, String> relationShips;
 
     private Table(Map<String, Column<?,?>> columns, String primaryKey, Map<String, String> relationsShips) {
         this.columns = columns;
         this.primaryKey = primaryKey;
         this.relationShips = relationsShips;
+    }
+
+    public void setName(String tableName) {
+        this.tableName = tableName;
+    }
+
+    public String getName() {
+        return tableName;
     }
 
     public void create(Row row) {
@@ -33,6 +53,10 @@ public class Table {
             }
             // Additional type checks can be added here
         }
+    }
+
+    public List<Column<?, ?>> getColumns() {
+        return columns.values().stream().toList();
     }
 
     private void updateIndexes(Map<String, Object> record, Row row) {
@@ -107,6 +131,7 @@ public class Table {
         Column<?,?> col2 = getColumn(primaryKey);
         return (Row)col2.findByVal(foundVal);
     }
+
     public List<Row> findAll(String column, Object value) {
         Column<?,?> col = getColumn(column);
         Object foundVal = col.findAllByVal(value);
@@ -125,6 +150,21 @@ public class Table {
         return columns.get(column);
     }
 
+    public List<Row> getAllRows() {
+        List<Row> matchingRows = new ArrayList<>();
+        for (Column<?, ?> column : columns.values()) {
+            if (column.indexStrategy.isPresent()) {
+                IndexStrategy<Object, Object> strategy = (IndexStrategy<Object, Object>) column.indexStrategy.get();
+                strategy.getAllRecords().stream()
+                        .filter(obj -> obj instanceof Row)
+                        .map(obj -> (Row) obj)
+                        .forEach(matchingRows::add);
+            }
+        }
+        return matchingRows;
+    }
+
+
     // Other CRUD methods
 
     // Nested Column class
@@ -140,6 +180,9 @@ public class Table {
             this.type = type;
             this.indexStrategy = Optional.ofNullable(indexStrategy);
             this.isPrimary = isPrimaryKey;
+        }
+        public boolean isPrimaryKey() {
+            return this.isPrimary;
         }
         public SpeedStreamInterface<V,T> Stream() {
             if (indexStrategy.isPresent()) {
@@ -162,6 +205,10 @@ public class Table {
 
         public String getName() {
             return name;
+        }
+
+        public DataType getType() {
+            return type;
         }
     }
 
@@ -200,6 +247,61 @@ public class Table {
         public Table build() {
             return new Table(new HashMap<>(columns), primaryKey, relations);
         }
+    }
+
+    public Schema toArrowSchema() {
+        List<Field> fields = new ArrayList<>();
+        for (Table.Column<?, ?> column : this.columns.values()) {
+            // Assuming all data as nullable for simplicity. Adjust types based on actual column types.
+            FieldType fieldType = FieldType.nullable(new ArrowType.Int(32, true)); // Example for int
+            fields.add(new Field(column.name, fieldType, null));
+        }
+        return new Schema(fields);
+    }
+
+    public void populateArrowVectors(Schema schema, RootAllocator allocator, List<Row> rows) {
+        // VectorSchemaRoot manages a collection of vectors in a schema.
+        try (VectorSchemaRoot root = VectorSchemaRoot.create(schema, allocator)) {
+            root.allocateNew();
+
+            for (Field field : schema.getFields()) {
+                FieldVector vector = root.getVector(field.getName());
+                if (vector instanceof IntVector) {
+                    populateIntVector((IntVector) vector, field.getName(), rows);
+                } else if (vector instanceof Float4Vector) {
+                    populateFloatVector((Float4Vector) vector, field.getName(), rows);
+                }
+            }
+
+            // At this point, your vectors in 'root' are populated with the row data.
+            // You can proceed to serialize or use these vectors as needed.
+
+            // Example: Serialize or write the data here
+        }
+    }
+
+    private void populateIntVector(IntVector vector, String columnName, List<Row> rows) {
+        for (int i = 0; i < rows.size(); i++) {
+            Integer value = (Integer) rows.get(i).get(columnName); // Ensure your get method can handle the type conversion
+            if (value != null) {
+                vector.setSafe(i, value);
+            } else {
+                vector.setNull(i); // Handle nulls appropriately
+            }
+        }
+        vector.setValueCount(rows.size());
+    }
+
+    private void populateFloatVector(Float4Vector vector, String columnName, List<Row> rows) {
+        for (int i = 0; i < rows.size(); i++) {
+            Float value = (Float) rows.get(i).get(columnName); // Ensure your get method can handle the type conversion
+            if (value != null) {
+                vector.setSafe(i, value);
+            } else {
+                vector.setNull(i); // Handle nulls appropriately
+            }
+        }
+        vector.setValueCount(rows.size());
     }
 
     public String toString() {
