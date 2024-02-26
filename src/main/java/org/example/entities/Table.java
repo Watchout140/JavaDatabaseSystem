@@ -12,6 +12,7 @@ import org.example.datastructures.SpeedStreamInterface;
 import org.example.enums.DataType;
 
 import org.apache.arrow.vector.*;
+import org.example.utilities.DataStructureUtilities;
 
 import java.util.List;
 import java.util.Map;
@@ -26,10 +27,10 @@ public class Table {
     private String tableName = "Unknown";
     Map<String, String> relationShips;
 
-    private Table(Map<String, Column<?,?>> columns, String primaryKey, Map<String, String> relationsShips) {
-        this.columns = columns;
-        this.primaryKey = primaryKey;
-        this.relationShips = relationsShips;
+     private Table(Map<String, Column<?,?>> columns, String primaryKey, Map<String, String> relationsShips) {
+         this.columns = columns;
+         this.primaryKey = primaryKey;
+         this.relationShips = relationsShips;
     }
 
     public void setName(String tableName) {
@@ -171,15 +172,18 @@ public class Table {
     public static class Column<V, T> {
         String name;
         DataType type;
-        Optional<IndexStrategy<V, T>> indexStrategy;
+        Optional<IndexStrategy<V, T>> indexStrategy = Optional.empty();
         boolean isPrimary;
+        String dataStructTypes;
 
-
-        Column(String name, DataType type, IndexStrategy<V, T> indexStrategy, boolean isPrimaryKey) {
+        Column(String name, DataType type, String indexStrategyCode, boolean isPrimaryKey) {
             this.name = name;
             this.type = type;
-            this.indexStrategy = Optional.ofNullable(indexStrategy);
             this.isPrimary = isPrimaryKey;
+            this.dataStructTypes = indexStrategyCode;
+            IndexStrategy<?, ?> indexStrategy = null;
+            if(indexStrategyCode != null) indexStrategy = DataStructureUtilities.getDataStructure(indexStrategyCode);
+            if(indexStrategy != null) this.indexStrategy = Optional.of((IndexStrategy<V, T>) indexStrategy);
         }
         public boolean isPrimaryKey() {
             return this.isPrimary;
@@ -202,6 +206,9 @@ public class Table {
             Object value = indexStrategy.get().findAll(test);
             return value ;
         }
+        public String getDataStructTypes() {
+            return dataStructTypes;
+        }
 
         public String getName() {
             return name;
@@ -212,24 +219,22 @@ public class Table {
         }
     }
 
-    // Table builder static inner class
     public static class Builder {
         private final Map<String, Column<?,?>> columns = new HashMap<>();
-        private Map<String, String> relations = new HashMap<>();
+        private final Map<String, String> relations = new HashMap<>();
 
         private String primaryKey;
-        // Add a column with an index
-        public <V, T> Builder addColumn(String name, DataType type, IndexStrategy<V, T> indexStrategy) {
+
+        public <V, T> Builder addColumn(String name, DataType type, String indexStrategy) {
             columns.put(name, new Column<>(name, type, indexStrategy, false));
             return this;
         }
-        public <V, T> Builder addColumn(String name, DataType type, IndexStrategy<V, T> indexStrategy, String relationShip) {
+        public <V, T> Builder addColumn(String name, DataType type, String indexStrategy, String relationShip) {
             relations.put(name, relationShip);
             columns.put(name, new Column<>(name, type, indexStrategy, false));
             return this;
         }
-        public <V, T> Builder addColumn(String name, DataType type, IndexStrategy<V, T> indexStrategy, boolean isPrimaryKey) {
-            if (primaryKey != null && isPrimaryKey) return null; //trow
+        public <V, T> Builder addColumn(String name, DataType type, String indexStrategy, boolean isPrimaryKey) {
             if (isPrimaryKey) {
                 this.primaryKey = name;
             }
@@ -237,8 +242,6 @@ public class Table {
             return this;
         }
 
-
-        // Add a column without an index
         public Builder addColumn(String name, DataType type) {
             columns.put(name, new Column<>(name, type, null, false));
             return this;
@@ -304,7 +307,17 @@ public class Table {
         vector.setValueCount(rows.size());
     }
 
+    @Override
     public String toString() {
-        return null;
+         StringBuilder out = new StringBuilder(tableName + "\n");
+         for(String colName: columns.keySet()) {
+             out.append(colName).append(",");
+         }
+         for(Row row: getAllRows()) {
+             for(String colName: columns.keySet()) {
+                 out.append("\n").append(row.get(colName)).append(",");
+             }
+         }
+         return out.toString();
     }
 }

@@ -14,16 +14,16 @@ public class Main {
     public static void main(String[] args) {
         Database db = new Database();
 
-        Table.Builder studentTableBuilder = new Table.Builder()
-                .addColumn("id", DataType.INT, new HashMapIndex<Integer, Row>(), true)
-                .addColumn("name", DataType.STRING, new HashMapIndex<String, Integer>())
+        /*Table.Builder studentTableBuilder = new Table.Builder()
+                .addColumn("id", DataType.INT, "HASH_STR_ROW", true)
+                .addColumn("name", DataType.STRING, "HASH_STR_INT")
                 .addColumn("grade", DataType.INT)
                 .addColumn("class_id", DataType.INT, null, "Class");
         Table studentTable = db.createTable("Student_t", studentTableBuilder);
 
         Table.Builder classTableBuilder = new Table.Builder()
-                .addColumn("id", DataType.INT, new HashMapIndex<Integer, Row>(), true)
-                .addColumn("class_name", DataType.STRING, new HashMapIndex<String, Integer>())
+                .addColumn("id", DataType.INT, "HASH_INT_ROW", true)
+                .addColumn("class_name", DataType.STRING, "HASH_STR_INT")
                 .addColumn("teacher", DataType.STRING);
         Table classTable = db.createTable("Class", classTableBuilder);
         classTable.create(new Row().set("id", 1).set("class_name", "Svenska").set("teacher", "Björn Johansson"));
@@ -72,7 +72,19 @@ public class Main {
         Row student = studentTable.findFirst(row -> row.get("name").equals("Vincent Hedblom"));
         System.out.println("STUIDENT: " + student);
 
-        db.save(studentTable);
-        db.read("Student_t");
+        db.save(studentTable);*/
+
+        Table studentTable = db.read("Student_t");
+        System.out.println("WALLA: " + db.find("Student_t", 2));
+        Row matchingRows = studentTable.findFirst("id", 2);
+        List<Row> list = studentTable.findAll("name", "Patrik Lind");
+        System.out.println("LIST: " + list);
+        System.out.println("MATCHINGROWS: " + matchingRows);
+
+        List<Row> rows = studentTable.find(row -> row.getInt("grade") > 70);
+        System.out.println("ROWS: " + rows);
+
+        Row student = studentTable.findFirst(row -> row.get("name").equals("Vincent Hedblom"));
+        System.out.println("STUIDENT: " + student);
     }
 }

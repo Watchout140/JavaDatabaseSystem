@@ -1,16 +1,16 @@
 package org.example.enums;
 
 public enum DataType {
-    INT(Integer.class),
-    STRING(String.class);
+    INT("INT"),
+    STRING("STR");
 
-    private final Class<?> typeClass;
+    private final String name;
 
-    DataType(Class<?> typeClass) {
-        this.typeClass = typeClass;
+    DataType(String name) {
+        this.name = name;
     }
 
-    public Class<?> getTypeClass() {
-        return this.typeClass;
+    public String getName() {
+        return name;
     }
 }

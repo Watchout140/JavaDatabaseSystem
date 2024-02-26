@@ -1,9 +1,12 @@
 package org.example.datastructures;
 
+import org.example.enums.DataType;
+
 import java.util.*;
 
 public class HashMapIndex<V,T> implements IndexStrategy<V, T> {
     private Map<V, Object> index = new HashMap<>();
+
 
     @Override
     public void insert(V key, T value) {

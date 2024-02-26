@@ -22,7 +22,7 @@ public class Database {
     }
 
     public Table read(String tableName) {
-        return dao.read(tableName);
+        return dao.read(tableName, this);
     }
 
     public Table createTable(String name, Table.Builder builder) {
