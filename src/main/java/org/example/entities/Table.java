@@ -82,7 +82,7 @@ public class Table {
     public List<Row> find(Predicate<Row> predicate) {
         List<Row> matchingRows = new ArrayList<>();
         for (Column<?, ?> column : columns.values()) {
-            if (column.indexStrategy.isPresent()) {
+            if (column.indexStrategy.isPresent() && column.isPrimary) {
                 IndexStrategy<Object, Object> strategy = (IndexStrategy<Object, Object>) column.indexStrategy.get();
                 strategy.getAllRecords().stream()
                         .filter(obj -> obj instanceof Row)
@@ -96,7 +96,7 @@ public class Table {
 
     public Row findFirst(Predicate<Row> predicate) {
         for (Column<?, ?> column : columns.values()) {
-            if (column.indexStrategy.isPresent()) {
+            if (column.indexStrategy.isPresent() && column.isPrimary) {
                 IndexStrategy<Object, Object> strategy = (IndexStrategy<Object, Object>) column.indexStrategy.get();
                 Optional<Row> firstMatch = strategy.getAllRecords().stream()
                         .filter(obj -> obj instanceof Row)
@@ -147,14 +147,23 @@ public class Table {
         return list;
     }
 
-    public Column<?,?> getColumn(String column) {
-        return columns.get(column);
+    private Column<?,?> getColumn(String column) {
+         return columns.get(column);
+    }
+
+    public <T> Column<T, ?> getColumn(String columnName, Class<T> type) {
+        Column<?, ?> rawColumn = columns.get(columnName);
+        if (rawColumn != null && type.isAssignableFrom(rawColumn.type.getDataClass())) {
+            return (Column<T, ?>) rawColumn;
+        } else {
+            throw new ClassCastException("Incompatible column type.");
+        }
     }
 
     public List<Row> getAllRows() {
         List<Row> matchingRows = new ArrayList<>();
         for (Column<?, ?> column : columns.values()) {
-            if (column.indexStrategy.isPresent()) {
+            if (column.indexStrategy.isPresent() && column.isPrimary) {
                 IndexStrategy<Object, Object> strategy = (IndexStrategy<Object, Object>) column.indexStrategy.get();
                 strategy.getAllRecords().stream()
                         .filter(obj -> obj instanceof Row)
@@ -195,6 +204,10 @@ public class Table {
                 throw new IllegalStateException("Index strategy not available.");
             }
         }
+        public List<Row> filter(Predicate<V> predicate) {
+            return (List<Row>)indexStrategy.get().findByPredicate(predicate);
+        }
+
         public Object findByVal(Object val) {
             V test = (V) val;
             Object value = indexStrategy.get().find(test);

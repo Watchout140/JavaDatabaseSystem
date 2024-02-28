@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class LinkedList<V, T> {
-    private static class Node<V, T> {
+    public static class Node<V, T> {
         private final V key;
         private final T data;
         private Node<V, T> next;
@@ -13,6 +13,14 @@ public class LinkedList<V, T> {
             this.data = data;
             this.next = next;
             this.key = key;
+        }
+
+        public Node<V, T> getNext() {
+            return next;
+        }
+
+        public T getData() {
+            return data;
         }
     }
     private Node<V, T> head;
@@ -23,6 +31,9 @@ public class LinkedList<V, T> {
         this.head = null;
         this.tail = null;
         this.size = 0;
+    }
+    public Node<V, T> getHead() {
+        return head;
     }
     public void add(int index, V key, T item) {
         if (index < 0 || index > size) {

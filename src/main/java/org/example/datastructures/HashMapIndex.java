@@ -3,8 +3,10 @@ package org.example.datastructures;
 import org.example.enums.DataType;
 
 import java.util.*;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
-public class HashMapIndex<V,T> implements IndexStrategy<V, T> {
+public class HashMapIndex<V, T> implements IndexStrategy<V, T> {
     private Map<V, Object> index = new HashMap<>();
 
 
@@ -32,6 +34,13 @@ public class HashMapIndex<V,T> implements IndexStrategy<V, T> {
             return list.getFirst();
         }
         return (T) val;
+    }
+
+    @Override
+    public List<T> findByPredicate(Predicate predicate) {
+        return (List<T>) index.values().stream()
+                .filter(predicate)
+                .collect(Collectors.toList());
     }
 
     @Override

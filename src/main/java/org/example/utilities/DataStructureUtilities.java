@@ -1,6 +1,7 @@
 package org.example.utilities;
 
 import org.apache.arrow.vector.types.pojo.ArrowType;
+import org.example.datastructures.BTreeIndex;
 import org.example.datastructures.HashMapIndex;
 import org.example.datastructures.IndexStrategy;
 import org.example.datastructures.LinkedListIndex;
@@ -21,6 +22,7 @@ public class DataStructureUtilities {
             case "LINKED_STR_INT" -> new LinkedListIndex<String, Integer>();
             case "LINKED_INT_INT" -> new LinkedListIndex<Integer, Integer>();
             case "LINKED_STR_STR" -> new LinkedListIndex<String, String>();
+            case "BTREE_INT_INT" -> new BTreeIndex<Integer, Integer>();
             default -> null;
         };
     }
