@@ -19,6 +19,9 @@ import java.util.Map;
 
 import java.util.*;
 
+import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 public class Table {
@@ -184,6 +187,7 @@ public class Table {
         Optional<IndexStrategy<V, T>> indexStrategy = Optional.empty();
         boolean isPrimary;
         String dataStructTypes;
+        Table table;
 
         Column(String name, DataType type, String indexStrategyCode, boolean isPrimaryKey) {
             this.name = name;
@@ -194,6 +198,15 @@ public class Table {
             if(indexStrategyCode != null) indexStrategy = DataStructureUtilities.getDataStructure(indexStrategyCode);
             if(indexStrategy != null) this.indexStrategy = Optional.of((IndexStrategy<V, T>) indexStrategy);
         }
+
+        public Row getRow(Object index) {
+            return table.columns.get(table.primaryKey).indexStrategy.map(
+                    strategy -> (Row) strategy.findByPredicate(
+                            id -> id == index
+                    ).getFirst()
+            ).orElse(null);
+        }
+
         public boolean isPrimaryKey() {
             return this.isPrimary;
         }
@@ -204,8 +217,9 @@ public class Table {
                 throw new IllegalStateException("Index strategy not available.");
             }
         }
-        public List<Row> filter(Predicate<V> predicate) {
-            return (List<Row>)indexStrategy.get().findByPredicate(predicate);
+
+        public List<T> filter(Predicate<V> predicate) {
+            return indexStrategy.get().findByPredicate(predicate);
         }
 
         public Object findByVal(Object val) {
@@ -214,10 +228,26 @@ public class Table {
 
             return value;
         }
-        public Object findAllByVal(Object val) {
+
+        public List<T> sort(Comparator<V> c) {
+            return indexStrategy.get().getSorted(c);
+        }
+
+        public List<T> sortAsc() {
+            return indexStrategy.get().getSortedAscending();
+        }
+
+        public List<T> sortDec() {
+            return indexStrategy.get().getSortedAscending().reversed();
+        }
+
+        public void delete(Object val) {
             V test = (V) val;
-            Object value = indexStrategy.get().findAll(test);
-            return value ;
+            indexStrategy.get().delete(test);
+
+        }
+        public Object findAllByVal(Object val) {
+            return indexStrategy.get().findAll((V) val) ;
         }
         public String getDataStructTypes() {
             return dataStructTypes;
@@ -261,63 +291,12 @@ public class Table {
         }
 
         public Table build() {
-            return new Table(new HashMap<>(columns), primaryKey, relations);
-        }
-    }
-
-    public Schema toArrowSchema() {
-        List<Field> fields = new ArrayList<>();
-        for (Table.Column<?, ?> column : this.columns.values()) {
-            // Assuming all data as nullable for simplicity. Adjust types based on actual column types.
-            FieldType fieldType = FieldType.nullable(new ArrowType.Int(32, true)); // Example for int
-            fields.add(new Field(column.name, fieldType, null));
-        }
-        return new Schema(fields);
-    }
-
-    public void populateArrowVectors(Schema schema, RootAllocator allocator, List<Row> rows) {
-        // VectorSchemaRoot manages a collection of vectors in a schema.
-        try (VectorSchemaRoot root = VectorSchemaRoot.create(schema, allocator)) {
-            root.allocateNew();
-
-            for (Field field : schema.getFields()) {
-                FieldVector vector = root.getVector(field.getName());
-                if (vector instanceof IntVector) {
-                    populateIntVector((IntVector) vector, field.getName(), rows);
-                } else if (vector instanceof Float4Vector) {
-                    populateFloatVector((Float4Vector) vector, field.getName(), rows);
-                }
+            Table table = new Table(new HashMap<>(columns), primaryKey, relations);
+            for(Column<?, ?> column: table.getColumns()) {
+                column.table = table;
             }
-
-            // At this point, your vectors in 'root' are populated with the row data.
-            // You can proceed to serialize or use these vectors as needed.
-
-            // Example: Serialize or write the data here
+            return table;
         }
-    }
-
-    private void populateIntVector(IntVector vector, String columnName, List<Row> rows) {
-        for (int i = 0; i < rows.size(); i++) {
-            Integer value = (Integer) rows.get(i).get(columnName); // Ensure your get method can handle the type conversion
-            if (value != null) {
-                vector.setSafe(i, value);
-            } else {
-                vector.setNull(i); // Handle nulls appropriately
-            }
-        }
-        vector.setValueCount(rows.size());
-    }
-
-    private void populateFloatVector(Float4Vector vector, String columnName, List<Row> rows) {
-        for (int i = 0; i < rows.size(); i++) {
-            Float value = (Float) rows.get(i).get(columnName); // Ensure your get method can handle the type conversion
-            if (value != null) {
-                vector.setSafe(i, value);
-            } else {
-                vector.setNull(i); // Handle nulls appropriately
-            }
-        }
-        vector.setValueCount(rows.size());
     }
 
     @Override

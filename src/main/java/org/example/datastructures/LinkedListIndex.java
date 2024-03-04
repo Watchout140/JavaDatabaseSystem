@@ -1,5 +1,6 @@
 package org.example.datastructures;
 
+import org.apache.hadoop.io.Text;
 import org.checkerframework.checker.units.qual.A;
 
 import java.util.*;
@@ -21,16 +22,26 @@ public class LinkedListIndex<V, T> implements IndexStrategy<V, T> {
     }
 
     @Override
-    public List<T> findByPredicate(Predicate predicate) {
+    public List<T> findByPredicate(Predicate<V> predicate) {
         List<T> matches = new ArrayList<>();
         LinkedList.Node<?, ?> node = index.getHead();
         while(node.getNext() != null) {
-            T data = (T) node.getData();
-            if(predicate.test(data)) {
-                matches.add(data);
+            if(predicate.test((V)node.getKey())) {
+                matches.add((T)node.getData());
             }
+            node = node.getNext();
         }
         return matches;
+    }
+
+    @Override
+    public List<T> getSorted(Comparator<V> c) {
+        return index.mergeSort(c);
+    }
+
+    @Override
+    public List<T> getSortedAscending() {
+        return getSorted((Comparator<V>) Comparator.naturalOrder().reversed());
     }
 
     @Override
@@ -50,7 +61,7 @@ public class LinkedListIndex<V, T> implements IndexStrategy<V, T> {
 
     @Override
     public Collection<Object> getAllRecords() {
-        return (Collection<Object>)index.toCollection();
+        return (Collection<Object>)index.toCollectionData();
     }
 
     // Implement methods

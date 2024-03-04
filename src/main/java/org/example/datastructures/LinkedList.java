@@ -2,6 +2,7 @@ package org.example.datastructures;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Comparator;
 
 public class LinkedList<V, T> {
     public static class Node<V, T> {
@@ -22,6 +23,10 @@ public class LinkedList<V, T> {
         public T getData() {
             return data;
         }
+
+        public V getKey() {
+            return key;
+        }
     }
     private Node<V, T> head;
     private Node<V, T> tail;
@@ -31,6 +36,9 @@ public class LinkedList<V, T> {
         this.head = null;
         this.tail = null;
         this.size = 0;
+    }
+    public int size() {
+        return size;
     }
     public Node<V, T> getHead() {
         return head;
@@ -126,7 +134,7 @@ public class LinkedList<V, T> {
         return deletedNode.data;
     }
 
-    public List<T> toCollection() {
+    public List<T> toCollectionData() {
         List<T> list = new ArrayList<>();
         Node<V, T> current = head;
         while (current != null) {
@@ -134,6 +142,77 @@ public class LinkedList<V, T> {
             current = current.next;
         }
         return list;
+    }
+
+    public List<V> toCollectionKey() {
+        List<V> list = new ArrayList<>();
+        Node<V, T> current = head;
+        while (current != null) {
+            list.add(current.key);
+            current = current.next;
+        }
+        return list;
+    }
+
+    public List<T> mergeSort(Comparator<V> comparator) {
+        if (size > 1) {
+            head = mergeSortRec(head, comparator);
+            tail = head;
+            while (tail.next != null) {
+                tail = tail.next;
+            }
+        }
+        return toCollectionData();
+    }
+
+    private Node<V, T> mergeSortRec(Node<V, T> head, Comparator<V> comparator) {
+        if (head == null || head.next == null) {
+            return head;
+        }
+
+        // Split the list into two halves
+        Node<V, T> middle = getMiddle(head);
+        Node<V, T> nextOfMiddle = middle.next;
+        middle.next = null;
+
+        // Apply mergeSort on both halves
+        Node<V, T> left = mergeSortRec(head, comparator);
+        Node<V, T> right = mergeSortRec(nextOfMiddle, comparator);
+
+        // Merge the sorted halves
+        return sortedMerge(left, right, comparator);
+    }
+
+    private Node<V, T> sortedMerge(Node<V, T> a, Node<V, T> b, Comparator<V> comparator) {
+        Node<V, T> result;
+        if (a == null) {
+            return b;
+        }
+        if (b == null) {
+            return a;
+        }
+
+        if (comparator.compare(a.key, b.key) <= 0) {
+            result = a;
+            result.next = sortedMerge(a.next, b, comparator);
+        } else {
+            result = b;
+            result.next = sortedMerge(a, b.next, comparator);
+        }
+        return result;
+    }
+
+    private Node<V, T> getMiddle(Node<V, T> head) {
+        if (head == null) {
+            return head;
+        }
+        Node<V, T> slow = head, fast = head;
+
+        while (fast.next != null && fast.next.next != null) {
+            slow = slow.next;
+            fast = fast.next.next;
+        }
+        return slow;
     }
 
     @Override

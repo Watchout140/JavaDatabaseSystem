@@ -1,5 +1,7 @@
 package org.example.datastructures;
 
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.thirdparty.protobuf.MapEntry;
 import org.example.enums.DataType;
 
 import java.util.*;
@@ -37,10 +39,38 @@ public class HashMapIndex<V, T> implements IndexStrategy<V, T> {
     }
 
     @Override
-    public List<T> findByPredicate(Predicate predicate) {
-        return (List<T>) index.values().stream()
-                .filter(predicate)
+    public List<T> getSorted(Comparator<V> comparator) {
+        List<T> sortedList = new ArrayList<>();
+
+        List<Map.Entry<V, Object>> sortedEntries = index.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey(comparator))
                 .collect(Collectors.toList());
+
+        for (Map.Entry<V, Object> entry : sortedEntries) {
+            Object value = entry.getValue();
+            if (value instanceof List) {
+                List<T> listValue = (List<T>) value;
+                sortedList.addAll(listValue);
+            } else {
+                sortedList.add((T) value);
+            }
+        }
+
+        return sortedList;
+    }
+
+    @Override
+    public List<T> getSortedAscending() {
+        return getSorted((Comparator<V>) Comparator.naturalOrder().reversed());
+    }
+
+    @Override
+    public List<T> findByPredicate(Predicate<V> predicate) {
+        List<T> list = new ArrayList<>();
+        for (Map.Entry<V, Object> entry: index.entrySet()) {
+            list.add((T) entry.getValue());
+        }
+        return list;
     }
 
     @Override
@@ -51,7 +81,6 @@ public class HashMapIndex<V, T> implements IndexStrategy<V, T> {
     @Override
     public List<T> findAll(V key) {
         Object val = index.get(key);
-
         if (!(val instanceof List<?>)) {
             List<T> list = new ArrayList<>();
             list.add((T) val);

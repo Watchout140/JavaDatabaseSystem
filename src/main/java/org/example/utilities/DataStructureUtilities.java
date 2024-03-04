@@ -23,6 +23,9 @@ public class DataStructureUtilities {
             case "LINKED_INT_INT" -> new LinkedListIndex<Integer, Integer>();
             case "LINKED_STR_STR" -> new LinkedListIndex<String, String>();
             case "BTREE_INT_INT" -> new BTreeIndex<Integer, Integer>();
+            case "BTREE_INT_STR" -> new BTreeIndex<Integer, String>();
+            case "BTREE_STR_INT" -> new BTreeIndex<String, Integer>();
+            case "BTREE_STR_STR" -> new BTreeIndex<String, String>();
             default -> null;
         };
     }

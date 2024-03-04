@@ -1,8 +1,10 @@
 package org.example.datastructures;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 public class BTree<V extends Comparable<V>, T>  {
     // max children per B-tree node = M-1
@@ -100,52 +102,6 @@ public class BTree<V extends Comparable<V>, T>  {
      *         and {@code null} if the key is not in the symbol table
      * @throws IllegalArgumentException if {@code key} is {@code null}
      */
-    /*public T get(V key) {
-        if (key == null) throw new IllegalArgumentException("argument to get() is null");
-        return search(root, key, height);
-    }*/
-
-   /* private T search(Node x, V key, int ht) {
-        Entry[] children = x.children;
-
-        // external node
-        if (ht == 0) {
-            for (int j = 0; j < x.m; j++) {
-                if (eq(key, children[j].key)) return (T) children[j].val;
-            }
-        }
-
-        // internal node
-        else {
-            for (int j = 0; j < x.m; j++) {
-                if (j+1 == x.m || less(key, children[j+1].key))
-                    return search(children[j].next, key, ht-1);
-            }
-        }
-        return null;
-    }
-
-
-    private void find(Node x, int ht, Predicate<T> predicate, List<T> results) {
-        Entry[] children = x.children;
-        System.out.println("ROOT: " + toString());
-        // External node
-        if (ht == 0) {
-            for (int j = 0; j < x.m; j++) {
-                if (predicate.test((T)children[j].val)) {
-                    results.add((T)children[j].val);
-                }
-            }
-        }
-
-        // Internal node
-        else {
-            for (int j = 0; j < x.m; j++) {
-                find(children[j].next, ht - 1, predicate, results);
-            }
-        }
-    }*/
-
 
     /**
      * Inserts the key-value pair into the symbol table, overwriting the old value
@@ -158,8 +114,10 @@ public class BTree<V extends Comparable<V>, T>  {
      */
     private void find(Node<V, T> x, Predicate<V> predicate, List<T> results) {
         int i = 0;
-        System.out.println("TEST: " + x.children.get(i).key);
-        while (i < x.m){
+
+        while (i < x.children.size()){
+            if (x.children.isEmpty()) return;
+            //System.out.println("TEST: " + x.children.get(i).key);
             if (predicate.test(x.children.get(i).key)) results.addAll(x.children.get(i).val);
             else if (!x.childrenNodes.isEmpty()){
                 find(x.childrenNodes.getLast(), predicate, results);
@@ -168,9 +126,10 @@ public class BTree<V extends Comparable<V>, T>  {
             i++;
         }
         if (!x.childrenNodes.isEmpty()) {
-
-            for (int j = 0; j <= i; j++)
-                find(x.childrenNodes.get(j), predicate, results);
+            for (int j = 0; j <= i; j++) {
+                System.out.println("JJJ: " + j + " " + i + " " + x.children);
+                if (predicate.test(x.children.get(0).key)) find(x.childrenNodes.get(j), predicate, results);
+            }
         }
     }
     public List<T> find(Predicate<V> predicate) {
@@ -294,6 +253,176 @@ public class BTree<V extends Comparable<V>, T>  {
 
         return t;
     }
+    private boolean merge(Node<V, T> parent, int childIndex, boolean mergeWithLeft) {
+        Node<V, T> targetNode;
+        Node<V, T> siblingNode;
+        int parentKeyIndex;
+
+        if (mergeWithLeft) {
+            targetNode = parent.childrenNodes.get(childIndex - 1);
+            siblingNode = parent.childrenNodes.get(childIndex);
+            parentKeyIndex = childIndex - 1;
+        } else {
+            targetNode = parent.childrenNodes.get(childIndex);
+            siblingNode = parent.childrenNodes.get(childIndex + 1);
+            parentKeyIndex = childIndex;
+        }
+
+        // Move the parent key down to the target node
+        Entry<V, T> parentEntry = parent.children.get(parentKeyIndex);
+        targetNode.children.add(parentEntry);
+        targetNode.m++;
+
+        // Move all keys and children from siblingNode to targetNode
+        for (int i = 0; i < siblingNode.m; i++) {
+            targetNode.children.add(siblingNode.children.get(i));
+            if (!siblingNode.childrenNodes.isEmpty()) {
+                targetNode.childrenNodes.add(siblingNode.childrenNodes.get(i));
+            }
+        }
+        if (!siblingNode.childrenNodes.isEmpty()) {
+            targetNode.childrenNodes.add(siblingNode.childrenNodes.get(siblingNode.m));
+        }
+
+        targetNode.m += siblingNode.m;
+
+        // Remove the key and siblingNode from the parent
+        parent.children.remove(parentKeyIndex);
+        parent.childrenNodes.remove(mergeWithLeft ? childIndex : childIndex + 1);
+        parent.m--;
+
+        // Adjust root if necessary
+        if (parent == root && parent.m == 0) {
+            root = targetNode;
+            height--;
+        }
+
+        return true;
+    }
+    public boolean remove(V key) {
+        if (key == null) throw new IllegalArgumentException("argument to remove() is null");
+        boolean result = remove(null, root, key, 0);
+        System.out.println("RÖÖT: \n" + this);
+        return result;
+    }
+
+    private void merge(Node<V, T> parent, Node<V, T> x, int deleteIndex, int parentChildNodeIndex, V key) {
+        //Entry<V, T> deletedEntry = x.children.remove(deleteIndex);
+        if (parent == null) {
+            for (int i = 0; i < x.childrenNodes.size(); i++) {
+                ArrayList<Entry<V,T>> children = x.childrenNodes.get(i).children;
+                if (children.size() > 1) {
+                    if (less(children.getFirst().key, key)) {
+                        x.children.remove(deleteIndex);
+                        x.children.add(deleteIndex, children.getLast());
+                        children.removeLast();
+                    } else {
+                        x.children.remove(deleteIndex);
+                        x.children.add(deleteIndex, children.getFirst());
+                        children.removeFirst();
+                    }
+                    break;
+                }
+            }
+            return;
+        }
+        if (parent.children.size() > 1) {
+            if (parentChildNodeIndex == parent.childrenNodes.size() - 1 && parentChildNodeIndex - 1 >= 0 &&  parent.childrenNodes.get(parentChildNodeIndex - 1).children.size() > 1) {
+                ArrayList<Entry<V, T>> children = parent.childrenNodes.get(parentChildNodeIndex - 1).children;
+                Entry<V, T> childEntry = children.getLast();
+                Entry<V, T> parentSwapEntry = parent.children.removeLast();
+                x.children.add(parentSwapEntry);
+                x.children.removeFirst();
+                parent.children.add(childEntry);
+            } else if (parentChildNodeIndex == 0 && parentChildNodeIndex + 1 < parent.childrenNodes.size() && parent.childrenNodes.get(parentChildNodeIndex + 1).children.size() > 1) {
+                ArrayList<Entry<V, T>> children = parent.childrenNodes.get(parentChildNodeIndex + 1).children;
+                Entry<V, T> childEntry = children.getFirst();
+                Entry<V, T> parentSwapEntry = parent.children.removeFirst();
+                x.children.add(parentSwapEntry);
+                x.children.removeFirst();
+                parent.children.addFirst(childEntry);
+            } else {
+                if (parentChildNodeIndex + 1 != parent.childrenNodes.size()) {
+                    Node<V, T> combineNode = parent.childrenNodes.get(parentChildNodeIndex + 1);
+                    x.childrenNodes.addAll(combineNode.childrenNodes);
+                    x.children.addAll(combineNode.children);
+                    Entry<V, T> removeFromParent = parent.children.remove(deleteIndex);
+                    x.children.removeFirst();
+                    x.children.addFirst(removeFromParent);
+
+                } else if (parentChildNodeIndex == parent.childrenNodes.size() - 1 && parentChildNodeIndex - 1 >= 0) {
+                    Node<V, T> combineNode = parent.childrenNodes.get(parentChildNodeIndex - 1);
+                    x.childrenNodes.addAll(combineNode.childrenNodes);
+                    x.children.addAll(combineNode.children);
+                    Entry<V, T> removeFromParent = parent.children.removeLast();
+                    x.children.removeFirst();
+                    x.children.addLast(removeFromParent);
+                } else if(parentChildNodeIndex == 0 && parentChildNodeIndex + 1 < parent.childrenNodes.size()) {
+                    Node<V, T> combineNode = parent.childrenNodes.get(parentChildNodeIndex + 1);
+                    x.childrenNodes.addAll(combineNode.childrenNodes);
+                    x.children.addAll(combineNode.children);
+                    Entry<V, T> removeFromParent = parent.children.removeFirst();
+                    x.children.removeFirst();
+                    x.children.addFirst(removeFromParent);
+                }
+            }
+        } else {
+            System.out.println("JAG KOMMER JU GHIT: " + parentChildNodeIndex);
+            if (parentChildNodeIndex == 0 && parent.childrenNodes.get(1).children.size() > 1) {
+                System.out.println("SEDANHÄr");
+                x.children.removeFirst();
+                x.children.add(parent.children.getFirst());
+                parent.children.removeFirst();
+                parent.children.add(parent.childrenNodes.get(1).children.removeFirst());
+            } else if (parentChildNodeIndex == 1 && parent.childrenNodes.get(0).children.size() > 1) {
+                x.children.removeFirst();
+                x.children.add(parent.children.getFirst());
+                parent.children.removeFirst();
+                parent.children.add(parent.childrenNodes.getFirst().children.removeLast());
+            } else {
+                if (parentChildNodeIndex == 0) {
+                    System.out.println("HEJSAN");
+                    Node<V, T> addToParentNode =  parent.childrenNodes.get(1);
+                    parent.children.add(addToParentNode.children.getFirst());
+                    System.out.println("PARWENRT: " + parent.children);
+                    parent.childrenNodes.addAll(addToParentNode.childrenNodes);
+                    parent.childrenNodes.remove(1);
+                    parent.childrenNodes.removeFirst();
+                    System.out.println("CHIDNODES: " + this);
+
+                } else {
+                    System.out.println("HEJSA2");
+                    Node<V, T> addToParentNode =  parent.childrenNodes.get(0);
+                    parent.children.add(addToParentNode.children.getFirst());
+                    parent.childrenNodes.addAll(addToParentNode.childrenNodes);
+                    parent.childrenNodes.clear();
+                }
+                height--;
+            }
+        }
+
+    }
+    private boolean remove(Node<V, T> parent, Node<V, T> x, V k, int parentChildNodeIndex) {
+        int i = 0;
+        while (i < x.m && k.compareTo(x.children.get(i).key) > 0) {
+            i++;
+        }
+        if (i < x.m && eq(k, x.children.get(i).key)) {
+            if (x.children.size() > 1 && x.childrenNodes.isEmpty()) {
+                if (x.children.get(i).val.size() > 1) x.children.get(i).val.removeFirst();
+                else x.children.remove(i);
+            } else {
+                merge(parent, x, i, parentChildNodeIndex, k);
+            }
+
+            return true;
+        }
+        if (x.childrenNodes.isEmpty()) {
+            return false;
+        }
+
+        return remove(x, x.childrenNodes.get(i), k, i);
+    }
 
     /**
      * Returns a string representation of this B-tree (for debugging).
@@ -330,6 +459,67 @@ public class BTree<V extends Comparable<V>, T>  {
     private boolean eq(V k1, V k2) {
         return k1.compareTo(k2) == 0;
     }
-    // (Optional) Implement methods for searching by key, removing a key, etc., similar to your linked list
-    // These methods would involve more detailed algorithms specific to B-trees, such as searching in a node and its children, merging nodes, etc.
+
+    public List<T> getSortedComp(Comparator<V> comparator) {
+        List<Pair<V, T>> keyValuePairs = new ArrayList<>();
+        collectKeyValuePairs(root, keyValuePairs);
+        keyValuePairs.sort(Comparator.comparing(Pair::getKey, comparator));
+        return keyValuePairs.stream().map(Pair::getValue).collect(Collectors.toList());
+    }
+
+    private void collectKeyValuePairs(Node<V, T> node, List<Pair<V, T>> keyValuePairs) {
+        if (node == null) return;
+
+        for (int i = 0; i < node.children.size(); i++) {
+            Entry<V, T> entry = node.children.get(i);
+            for (T value : entry.val) {
+                keyValuePairs.add(new Pair<>(entry.key, value));
+            }
+            if (i < node.childrenNodes.size()) {
+                collectKeyValuePairs(node.childrenNodes.get(i), keyValuePairs);
+            }
+        }
+        if (node.children.size() < node.childrenNodes.size()) {
+            collectKeyValuePairs(node.childrenNodes.get(node.childrenNodes.size() - 1), keyValuePairs);
+        }
+    }
+
+    // Utility class to hold key-value pairs
+    private static class Pair<V, T> {
+        private final V key;
+        private final T value;
+
+        public Pair(V key, T value) {
+            this.key = key;
+            this.value = value;
+        }
+
+        public V getKey() {
+            return key;
+        }
+
+        public T getValue() {
+            return value;
+        }
+    }
+
+    public List<T> getSorted() {
+        List<T> sortedValues = new ArrayList<>();
+        traverseAndCollect(root, sortedValues);
+        return sortedValues;
+    }
+
+    private void traverseAndCollect(Node<V, T> node, List<T> sortedValues) {
+        if (node == null) return;
+
+        for (int i = 0; i < node.children.size(); i++) {
+            if (i < node.childrenNodes.size()) {
+                traverseAndCollect(node.childrenNodes.get(i), sortedValues);
+            }
+            sortedValues.addAll(node.children.get(i).val);
+        }
+        if (node.children.size() < node.childrenNodes.size()) {
+            traverseAndCollect(node.childrenNodes.get(node.childrenNodes.size() - 1), sortedValues);
+        }
+    }
 }

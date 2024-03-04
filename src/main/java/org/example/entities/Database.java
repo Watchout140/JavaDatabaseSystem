@@ -1,5 +1,6 @@
 package org.example.entities;
 
+import org.apache.hadoop.util.hash.Hash;
 import org.example.dao.DaoAccessMethods;
 import org.example.dao.DaoArrow;
 import org.example.entities.Row;
@@ -9,13 +10,10 @@ import java.util.*;
 import java.util.function.Predicate;
 
 public class Database {
-    private final Map<String, Table> tables;
-    private Row row;
+    protected static final Map<String, Table> tables = new HashMap<>();
     private final DaoAccessMethods dao = new DaoArrow();
 
-    public Database() {
-        this.tables = new HashMap<>();
-    }
+    public Database() { }
 
     public boolean save(Table table) {
         return dao.saveTable(table);

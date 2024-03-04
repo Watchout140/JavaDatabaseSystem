@@ -8,6 +8,7 @@ import org.example.enums.DataStructure;
 import org.example.enums.DataType;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 public class Main {
@@ -16,7 +17,7 @@ public class Main {
 
         Table.Builder studentTableBuilder = new Table.Builder()
                 .addColumn("id", DataType.INT, "HASH_INT_ROW", true)
-                .addColumn("name", DataType.STRING, "HASH_STR_INT")
+                .addColumn("name", DataType.STRING, "BTREE_STR_INT")
                 .addColumn("grade", DataType.INT, "BTREE_INT_INT")
                 .addColumn("class_id", DataType.INT, null, "Class");
         Table studentTable = db.createTable("Student_t", studentTableBuilder);
@@ -41,7 +42,7 @@ public class Main {
                 .set("class_id", 1);
         Row newStudent3 = new Row()
                 .set("id", 3)
-                .set("name", "Vincent Hedblom")
+                .set("name", "AVincent Hedblom")
                 .set("grade", 10)
                 .set("class_id", null);
         Row newStudent4 = new Row()
@@ -162,7 +163,7 @@ public class Main {
         studentTable.create(newStudent10);
         studentTable.create(newStudent11);
         studentTable.create(newStudent12);
-        studentTable.create(newStudent13);
+       /*  studentTable.create(newStudent13);
         studentTable.create(newStudent14);
         studentTable.create(newStudent15);
         studentTable.create(newStudent16);
@@ -173,22 +174,30 @@ public class Main {
         studentTable.create(newStudent21);
         studentTable.create(newStudent22);
         studentTable.create(newStudent23);
-        studentTable.create(newStudent24);
+        studentTable.create(newStudent24);*/
+        studentTable.getColumn("grade", Integer.class).delete(85);
+
         System.out.println("WALLA: " + db.find("Student_t", 2));
         Row matchingRows = studentTable.findFirst("id", 2);
-        List<Row> list = studentTable.findAll("name", "Patrik Lind");
-        System.out.println("LIST: " + list);
+        //List<Row> list = studentTable.findAll("name", "Patrik Lind");
+        //System.out.println("LIST: " + list);
         System.out.println("MATCHINGROWS: " + matchingRows);
 
-        List<Row> rows = studentTable.getColumn("grade", Integer.class).filter(grade -> grade > 101);
-        System.out.println("ROWS: " + rows);
+        List<?> rows = studentTable.getColumn("grade", Integer.class).filter(grade -> grade > 101);
+        List<?> rows1 = studentTable.getColumn("name", String.class).filter(name -> name.equals("WALLA"));
+
+        System.out.println("ROWS: " + rows1);
 
         Row student = studentTable.findFirst(row -> row.get("name").equals("Vincent Hedblom"));
-        System.out.println("STUIDENT: " + student);
+        List<?> sortedByName = studentTable.getColumn("name", String.class).sort((n1, n2) -> n2.length() - n1.length());
+        System.out.println("STUIDENT: " + sortedByName);
+
+        Row data = studentTable.getColumn("id", Integer.class).getRow(1);
+        System.out.println("KOOOOOOOOOOOOL: " + data);
+
+        System.out.println("AAAAAAAAAAA: " + studentTable.getColumn("name", String.class).sortDec());
 
         db.save(studentTable);
-
-
 
         /*Table studentTable = db.read("Student_t");
         System.out.println("WALLA: " + db.find("Student_t", 2));

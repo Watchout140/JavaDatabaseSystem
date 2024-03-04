@@ -32,8 +32,6 @@ public class Row {
 
     @Override
     public String toString() {
-        return "Row{" +
-                "data=" + data +
-                '}';
+        return data.toString();
     }
 }
