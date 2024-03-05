@@ -1,10 +1,10 @@
 package org.example.datastructures;
 
-import org.apache.hadoop.io.Text;
-import org.checkerframework.checker.units.qual.A;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 public class LinkedListIndex<V, T> implements IndexStrategy<V, T> {
     private LinkedList<V, T> index = new LinkedList<>();
@@ -64,5 +64,8 @@ public class LinkedListIndex<V, T> implements IndexStrategy<V, T> {
         return (Collection<Object>)index.toCollectionData();
     }
 
-    // Implement methods
+    @Override
+    public <R> Stream<R> map(Function<? super V, ? extends R> mapper) {
+        return index.toCollectionKey().stream().map(mapper);
+    }
 }

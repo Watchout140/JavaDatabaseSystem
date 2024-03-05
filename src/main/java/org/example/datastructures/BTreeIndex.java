@@ -6,7 +6,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 public class BTreeIndex<V extends Comparable<V>,T> implements IndexStrategy<V, T> {
     private BTree<V, T> bTree = new BTree<>();
@@ -30,8 +32,7 @@ public class BTreeIndex<V extends Comparable<V>,T> implements IndexStrategy<V, T
 
     @Override
     public List<T> getSorted(Comparator<V> c) {
-        List<T> sortedList = bTree.getSortedComp(c);
-        return sortedList;
+        return bTree.getSortedComp(c);
     }
 
     @Override
@@ -57,5 +58,10 @@ public class BTreeIndex<V extends Comparable<V>,T> implements IndexStrategy<V, T
     @Override
     public Collection<Object> getAllRecords() {
         return null;
+    }
+
+    @Override
+    public <R> Stream<R> map(Function<? super V, ? extends R> mapper) {
+        return bTree.getKeys().stream().map(mapper);
     }
 }

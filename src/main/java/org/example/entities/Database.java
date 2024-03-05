@@ -1,6 +1,5 @@
 package org.example.entities;
 
-import org.apache.hadoop.util.hash.Hash;
 import org.example.dao.DaoAccessMethods;
 import org.example.dao.DaoArrow;
 import org.example.entities.Row;
@@ -34,6 +33,7 @@ public class Database {
     }
     public Row find(String tableStr, Object primaryKeyValue) {
         Table table = tables.get(tableStr);
+        if (table == null) return null;
         Row row = table.find(primaryKeyValue).copy();
         if (!table.relationShips.isEmpty()) {
             for (Map.Entry<String, String> r : table.relationShips.entrySet()) {

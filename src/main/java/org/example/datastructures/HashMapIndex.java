@@ -1,12 +1,10 @@
 package org.example.datastructures;
 
-import org.apache.hadoop.io.Text;
-import org.apache.hadoop.thirdparty.protobuf.MapEntry;
-import org.example.enums.DataType;
-
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class HashMapIndex<V, T> implements IndexStrategy<V, T> {
     private Map<V, Object> index = new HashMap<>();
@@ -99,6 +97,8 @@ public class HashMapIndex<V, T> implements IndexStrategy<V, T> {
         return index.values();
     }
 
-
-    // Implement methods
+    @Override
+    public <R> Stream<R> map(Function<? super V, ? extends R> mapper) {
+        return index.keySet().stream().map(mapper);
+    }
 }

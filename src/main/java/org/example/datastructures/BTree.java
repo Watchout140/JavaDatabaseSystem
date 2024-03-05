@@ -253,59 +253,53 @@ public class BTree<V extends Comparable<V>, T>  {
 
         return t;
     }
-    private boolean merge(Node<V, T> parent, int childIndex, boolean mergeWithLeft) {
-        Node<V, T> targetNode;
-        Node<V, T> siblingNode;
-        int parentKeyIndex;
 
-        if (mergeWithLeft) {
-            targetNode = parent.childrenNodes.get(childIndex - 1);
-            siblingNode = parent.childrenNodes.get(childIndex);
-            parentKeyIndex = childIndex - 1;
-        } else {
-            targetNode = parent.childrenNodes.get(childIndex);
-            siblingNode = parent.childrenNodes.get(childIndex + 1);
-            parentKeyIndex = childIndex;
-        }
-
-        // Move the parent key down to the target node
-        Entry<V, T> parentEntry = parent.children.get(parentKeyIndex);
-        targetNode.children.add(parentEntry);
-        targetNode.m++;
-
-        // Move all keys and children from siblingNode to targetNode
-        for (int i = 0; i < siblingNode.m; i++) {
-            targetNode.children.add(siblingNode.children.get(i));
-            if (!siblingNode.childrenNodes.isEmpty()) {
-                targetNode.childrenNodes.add(siblingNode.childrenNodes.get(i));
-            }
-        }
-        if (!siblingNode.childrenNodes.isEmpty()) {
-            targetNode.childrenNodes.add(siblingNode.childrenNodes.get(siblingNode.m));
-        }
-
-        targetNode.m += siblingNode.m;
-
-        // Remove the key and siblingNode from the parent
-        parent.children.remove(parentKeyIndex);
-        parent.childrenNodes.remove(mergeWithLeft ? childIndex : childIndex + 1);
-        parent.m--;
-
-        // Adjust root if necessary
-        if (parent == root && parent.m == 0) {
-            root = targetNode;
-            height--;
-        }
-
-        return true;
-    }
     public boolean remove(V key) {
         if (key == null) throw new IllegalArgumentException("argument to remove() is null");
-        boolean result = remove(null, root, key, 0);
+        boolean result = remove(null, null, root, key, 0, 0);
         System.out.println("RÖÖT: \n" + this);
         return result;
     }
 
+    private boolean remove(Node<V, T> parentsParent, Node<V, T> parent, Node<V, T> x, V k, int parentChildNodeIndex, int grandParentsChildNodeIndex) {
+        int i = 0;
+        while (i < x.m && k.compareTo(x.children.get(i).key) > 0) {
+            i++;
+        }
+        if (i < x.m && eq(k, x.children.get(i).key)) {
+            if (x.children.size() > 1 && x.childrenNodes.isEmpty()) {
+                if (x.children.get(i).val.size() > 1) x.children.get(i).val.removeFirst();
+                else x.children.remove(i);
+            } else if (parent.children.size() == 1 && parent.childrenNodes.get(0).children.size() == 1 && parent.childrenNodes.get(1).children.size() == 1) {
+                System.out.println("GRANDPARANT: " + grandParentsChildNodeIndex);
+                if (grandParentsChildNodeIndex == 0 && parentsParent.children.size() == 1 && parentsParent.childrenNodes.get(grandParentsChildNodeIndex + 1).children.size() > 1) {
+                    System.out.println("DEN GÖR CIRKULATION ÅT HÖGER");
+                    List<Node<V, T>> otherSideChildNodes = parentsParent.childrenNodes.get(grandParentsChildNodeIndex + 1).childrenNodes;
+                    otherSideChildNodes.getFirst().children.addAll(parentsParent.childrenNodes.get(grandParentsChildNodeIndex + 1).childrenNodes.get(1).children);
+                    otherSideChildNodes.get(1).children.clear();
+                    otherSideChildNodes.getFirst().childrenNodes.addAll(parentsParent.childrenNodes.get(grandParentsChildNodeIndex + 1).childrenNodes.get(1).childrenNodes);
+                    parentsParent.children.add(parentsParent.childrenNodes.get(grandParentsChildNodeIndex + 1).children.removeFirst());
+                    parent.children.add(parentsParent.children.removeFirst());
+                    x.children.add(parent.children.remove(parentChildNodeIndex));
+                    x.children.removeFirst();
+                } else if (grandParentsChildNodeIndex == parentsParent.childrenNodes.size() - 1 && parentsParent.children.size() == 1 && parentsParent.childrenNodes.get(grandParentsChildNodeIndex - 1).children.size() > 1) {
+                    parentsParent.children.addFirst(parentsParent.childrenNodes.get(grandParentsChildNodeIndex - 1).children.removeFirst());
+                    parent.children.addFirst(parentsParent.children.removeLast());
+                    x.children.add(parent.children.remove(parentChildNodeIndex));
+                    x.children.removeFirst();
+                }
+            } else {
+                merge(parent, x, i, parentChildNodeIndex, k);
+            }
+
+            return true;
+        }
+        if (x.childrenNodes.isEmpty()) {
+            return false;
+        }
+
+        return remove(parent, x, x.childrenNodes.get(i), k, i, parentChildNodeIndex);
+    }
     private void merge(Node<V, T> parent, Node<V, T> x, int deleteIndex, int parentChildNodeIndex, V key) {
         //Entry<V, T> deletedEntry = x.children.remove(deleteIndex);
         if (parent == null) {
@@ -402,27 +396,7 @@ public class BTree<V extends Comparable<V>, T>  {
         }
 
     }
-    private boolean remove(Node<V, T> parent, Node<V, T> x, V k, int parentChildNodeIndex) {
-        int i = 0;
-        while (i < x.m && k.compareTo(x.children.get(i).key) > 0) {
-            i++;
-        }
-        if (i < x.m && eq(k, x.children.get(i).key)) {
-            if (x.children.size() > 1 && x.childrenNodes.isEmpty()) {
-                if (x.children.get(i).val.size() > 1) x.children.get(i).val.removeFirst();
-                else x.children.remove(i);
-            } else {
-                merge(parent, x, i, parentChildNodeIndex, k);
-            }
 
-            return true;
-        }
-        if (x.childrenNodes.isEmpty()) {
-            return false;
-        }
-
-        return remove(x, x.childrenNodes.get(i), k, i);
-    }
 
     /**
      * Returns a string representation of this B-tree (for debugging).
@@ -458,6 +432,12 @@ public class BTree<V extends Comparable<V>, T>  {
 
     private boolean eq(V k1, V k2) {
         return k1.compareTo(k2) == 0;
+    }
+
+    public List<V> getKeys() {
+        List<Pair<V, T>> keyValuePairs = new ArrayList<>();
+        collectKeyValuePairs(root, keyValuePairs);
+        return keyValuePairs.stream().map(Pair::getKey).collect(Collectors.toList());
     }
 
     public List<T> getSortedComp(Comparator<V> comparator) {

@@ -15,9 +15,9 @@ public class Main {
     public static void main(String[] args) {
         Database db = new Database();
 
-        Table.Builder studentTableBuilder = new Table.Builder()
+        /*Table.Builder studentTableBuilder = new Table.Builder()
                 .addColumn("id", DataType.INT, "HASH_INT_ROW", true)
-                .addColumn("name", DataType.STRING, "BTREE_STR_INT")
+                .addColumn("name", DataType.STRING, "LINKED_STR_INT")
                 .addColumn("grade", DataType.INT, "BTREE_INT_INT")
                 .addColumn("class_id", DataType.INT, null, "Class");
         Table studentTable = db.createTable("Student_t", studentTableBuilder);
@@ -174,8 +174,12 @@ public class Main {
         studentTable.create(newStudent21);
         studentTable.create(newStudent22);
         studentTable.create(newStudent23);
-        studentTable.create(newStudent24);*/
+        studentTable.create(newStudent24);
         studentTable.getColumn("grade", Integer.class).delete(85);
+        studentTable.getColumn("grade", Integer.class).delete(10);
+        studentTable.getColumn("grade", Integer.class).delete(10);*/
+
+        Table studentTable = db.read("student_t");
 
         System.out.println("WALLA: " + db.find("Student_t", 2));
         Row matchingRows = studentTable.findFirst("id", 2);
@@ -183,10 +187,11 @@ public class Main {
         //System.out.println("LIST: " + list);
         System.out.println("MATCHINGROWS: " + matchingRows);
 
-        List<?> rows = studentTable.getColumn("grade", Integer.class).filter(grade -> grade > 101);
-        List<?> rows1 = studentTable.getColumn("name", String.class).filter(name -> name.equals("WALLA"));
+        List<?> rows = studentTable.getColumn("grade", Integer.class).filter(grade -> grade > 90);
+        List<?> rows1 = studentTable.getColumn("name", String.class).filter(name -> name.equals("Patrik Lind"));
 
-        System.out.println("ROWS: " + rows1);
+        System.out.println("ROWS: " + rows);
+        System.out.println("ROWS FILTER: " + rows1);
 
         Row student = studentTable.findFirst(row -> row.get("name").equals("Vincent Hedblom"));
         List<?> sortedByName = studentTable.getColumn("name", String.class).sort((n1, n2) -> n2.length() - n1.length());
@@ -198,6 +203,13 @@ public class Main {
         System.out.println("AAAAAAAAAAA: " + studentTable.getColumn("name", String.class).sortDec());
 
         db.save(studentTable);
+
+        System.out.println("sdasad: " + studentTable.getColumn("name", String.class).map(name -> name + "_" + name.length()).toList());
+
+        //List<Integer> list = new ArrayList<>(List.of(3, 6, 9, 12, 15));
+        //list.stream().map(num -> num.toString());
+
+
 
         /*Table studentTable = db.read("Student_t");
         System.out.println("WALLA: " + db.find("Student_t", 2));

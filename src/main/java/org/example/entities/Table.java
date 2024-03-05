@@ -23,6 +23,8 @@ import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Table {
     private final Map<String, Column<?, ?>> columns;
@@ -207,6 +209,42 @@ public class Table {
             ).orElse(null);
         }
 
+        public List<Row> getRows(Set<Object> indexes) {
+            List<Row> matchingRows = new ArrayList<>();
+            for(Object rowObj: table.columns.get(table.primaryKey).indexStrategy.get().getAllRecords()) {
+                Row row = ((Row)rowObj).copy();
+                for(Map.Entry<String, String> relation: table.relationShips.entrySet()) {
+                    Object relationId = row.get(relation.getKey());
+                    if(relationId == null) continue;
+                    Table relationTable = Database.tables.get(relation.getValue());
+                    Row relationRow = relationTable.findFirst(relationTable.primaryKey, row.get(relation.getKey()));
+                    row.set(relation.getKey(), relationRow);
+                }
+                if(indexes.contains((row).get(table.primaryKey))) {
+                    matchingRows.add(row);
+                }
+            }
+            return matchingRows;
+        }
+
+        public List<Row> getRowsSorted(List<T> indexes) {
+
+            List<Row> allRows = table.columns.get(table.primaryKey).indexStrategy.get().getAllRecords().stream()
+                    .map(rowObj -> (Row) rowObj)
+                    .toList();
+
+            List<Row> sortedRows = new ArrayList<>();
+
+            for (Object index : indexes) {
+                allRows.stream()
+                        .filter(row -> index.equals(row.get(table.primaryKey)))
+                        .findFirst()
+                        .ifPresent(sortedRows::add);
+            }
+
+            return sortedRows;
+        }
+
         public boolean isPrimaryKey() {
             return this.isPrimary;
         }
@@ -218,8 +256,12 @@ public class Table {
             }
         }
 
-        public List<T> filter(Predicate<V> predicate) {
-            return indexStrategy.get().findByPredicate(predicate);
+        private List<Row> getRowsFromIndex(List<T> indexes) {
+            return null;
+        }
+
+        public List<Row> filter(Predicate<V> predicate) {
+            return getRows(new HashSet<>(indexStrategy.get().findByPredicate(predicate)));
         }
 
         public Object findByVal(Object val) {
@@ -229,16 +271,20 @@ public class Table {
             return value;
         }
 
-        public List<T> sort(Comparator<V> c) {
-            return indexStrategy.get().getSorted(c);
+        public List<Row> sort(Comparator<V> c) {
+            return getRowsSorted(indexStrategy.get().getSorted(c));
         }
 
-        public List<T> sortAsc() {
-            return indexStrategy.get().getSortedAscending();
+        public <R> Stream<R> map(Function<? super V, ? extends R> mapper) {
+            return indexStrategy.get().map(mapper);
         }
 
-        public List<T> sortDec() {
-            return indexStrategy.get().getSortedAscending().reversed();
+        public List<Row> sortAsc() {
+            return getRowsSorted(indexStrategy.get().getSortedAscending());
+        }
+
+        public List<Row> sortDec() {
+            return getRowsSorted(indexStrategy.get().getSortedAscending()).reversed();
         }
 
         public void delete(Object val) {
