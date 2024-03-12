@@ -16,6 +16,14 @@ public class Database {
         savedTables.clear();
         return saveTable(table);
     }
+    public boolean saveAll() {
+        savedTables.clear();
+        for (Map.Entry<String, Table> t : tables.entrySet()) {
+            boolean bool = saveTable(t.getValue());
+            if (!bool) return false;
+        }
+        return true;
+    }
     public boolean readAll() {
         tables = dao.readAllTables(this);
         return true;
