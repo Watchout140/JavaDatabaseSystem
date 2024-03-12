@@ -1,12 +1,9 @@
-package org.example.entities;
+package org.bumbibjornarna.jds.entities;
 
-import org.example.dao.DaoAccessMethods;
-import org.example.dao.DaoArrow;
-import org.example.entities.Row;
-import org.example.entities.Table;
+import org.bumbibjornarna.jds.dao.DaoAccessMethods;
+import org.bumbibjornarna.jds.dao.DaoArrow;
 
 import java.util.*;
-import java.util.function.Predicate;
 
 public class Database {
     protected static Map<String, Table> tables = new HashMap<>();

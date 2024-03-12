@@ -1,7 +1,7 @@
-package org.example.dao;
+package org.bumbibjornarna.jds.dao;
 
-import org.example.entities.Database;
-import org.example.entities.Table;
+import org.bumbibjornarna.jds.entities.Table;
+import org.bumbibjornarna.jds.entities.Database;
 
 import java.util.Map;
 

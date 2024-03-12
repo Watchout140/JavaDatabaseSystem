@@ -1,4 +1,4 @@
-package org.example.datastructures;
+package org.bumbibjornarna.jds.datastructures;
 
 import java.util.Map;
 import java.util.function.Predicate;

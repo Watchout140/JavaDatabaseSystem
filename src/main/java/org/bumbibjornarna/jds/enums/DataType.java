@@ -1,4 +1,4 @@
-package org.example.enums;
+package org.bumbibjornarna.jds.enums;
 
 public enum DataType {
     INT(Integer.class),

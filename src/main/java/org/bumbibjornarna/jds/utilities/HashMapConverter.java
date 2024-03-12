@@ -1,4 +1,4 @@
-package org.example.utilities;
+package org.bumbibjornarna.jds.utilities;
 
 import java.util.HashMap;
 import java.util.Map;

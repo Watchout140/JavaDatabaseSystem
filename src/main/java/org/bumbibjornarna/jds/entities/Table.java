@@ -1,29 +1,19 @@
-package org.example.entities;
+package org.bumbibjornarna.jds.entities;
 
-import org.apache.arrow.memory.RootAllocator;
-import org.apache.arrow.vector.IntVector;
-import org.apache.arrow.vector.types.pojo.ArrowType;
-import org.apache.arrow.vector.types.pojo.Field;
-import org.apache.arrow.vector.types.pojo.FieldType;
-import org.apache.arrow.vector.types.pojo.Schema;
-import org.example.datastructures.IndexStrategy;
-import org.example.datastructures.IndexStrategyStream;
-import org.example.datastructures.SpeedStreamInterface;
-import org.example.enums.DataType;
+import org.bumbibjornarna.jds.enums.DataType;
+import org.bumbibjornarna.jds.datastructures.IndexStrategy;
+import org.bumbibjornarna.jds.datastructures.IndexStrategyStream;
+import org.bumbibjornarna.jds.datastructures.SpeedStreamInterface;
 
-import org.apache.arrow.vector.*;
-import org.example.utilities.DataStructureUtilities;
+import org.bumbibjornarna.jds.utilities.DataStructureUtilities;
 
 import java.util.List;
 import java.util.Map;
 
 import java.util.*;
 
-import java.util.function.BiFunction;
-import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Table {

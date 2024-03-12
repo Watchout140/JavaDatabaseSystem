@@ -1,12 +1,12 @@
-package org.example.utilities;
+package org.bumbibjornarna.jds.utilities;
 
 import org.apache.arrow.vector.types.pojo.ArrowType;
-import org.example.datastructures.BTreeIndex;
-import org.example.datastructures.HashMapIndex;
-import org.example.datastructures.IndexStrategy;
-import org.example.datastructures.LinkedListIndex;
-import org.example.entities.Row;
-import org.example.enums.DataType;
+import org.bumbibjornarna.jds.enums.DataType;
+import org.bumbibjornarna.jds.datastructures.BTreeIndex;
+import org.bumbibjornarna.jds.datastructures.HashMapIndex;
+import org.bumbibjornarna.jds.datastructures.IndexStrategy;
+import org.bumbibjornarna.jds.datastructures.LinkedListIndex;
+import org.bumbibjornarna.jds.entities.Row;
 
 public class DataStructureUtilities {
 

@@ -1,4 +1,4 @@
-package org.example.dao;
+package org.bumbibjornarna.jds.dao;
 
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
@@ -12,12 +12,12 @@ import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
 import org.apache.arrow.vector.types.pojo.Schema;
-import org.example.entities.Database;
-import org.example.entities.Row;
-import org.example.entities.Table;
-import org.example.enums.DataType;
-import org.example.utilities.DataStructureUtilities;
-import org.example.utilities.HashMapConverter;
+import org.bumbibjornarna.jds.entities.Database;
+import org.bumbibjornarna.jds.entities.Row;
+import org.bumbibjornarna.jds.entities.Table;
+import org.bumbibjornarna.jds.enums.DataType;
+import org.bumbibjornarna.jds.utilities.DataStructureUtilities;
+import org.bumbibjornarna.jds.utilities.HashMapConverter;
 
 import java.io.File;
 import java.io.FileInputStream;

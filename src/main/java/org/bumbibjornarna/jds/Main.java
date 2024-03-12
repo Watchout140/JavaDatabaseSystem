@@ -1,14 +1,8 @@
-package org.example;
+package org.bumbibjornarna.jds;
 
-import org.example.datastructures.HashMapIndex;
-import org.example.entities.Database;
-import org.example.entities.Row;
-import org.example.entities.Table;
-import org.example.enums.DataStructure;
-import org.example.enums.DataType;
+import org.bumbibjornarna.jds.entities.Database;
+import org.bumbibjornarna.jds.entities.Table;
 
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 public class Main {
