@@ -15,18 +15,16 @@ public class BTreeIndex<V extends Comparable<V>,T> implements IndexStrategy<V, T
     @Override
     public void insert(V key, T value) {
         bTree.put(key, value);
-        System.out.println(bTree.toString());
     }
 
     @Override
     public T find(V key) {
-        return null;//bTree.get(key);
+        return bTree.find(key);
     }
 
     @Override
     public List<T> findByPredicate(Predicate<V> predicate) {
         List<T> list = bTree.find(predicate);
-        System.out.println("LIST: "+  list);
         return list;
     }
 

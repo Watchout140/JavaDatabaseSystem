@@ -16,8 +16,6 @@ public class LinkedListIndex<V, T> implements IndexStrategy<V, T> {
 
     @Override
     public T find(V key) {
-        System.out.println(index.toString());
-        System.out.println("VAL: " + index.getByKey(key) + " Key: " + key);
         return index.getByKey(key);
     }
 

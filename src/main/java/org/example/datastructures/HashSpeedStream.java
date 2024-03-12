@@ -13,7 +13,6 @@ public class HashSpeedStream<K, V> implements SpeedStreamInterface<K, V> {
 
     @Override
     public V search(Predicate<K> condition) {
-        System.out.println("data " + data);
         return null;
     }
     /*@Override

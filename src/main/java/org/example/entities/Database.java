@@ -9,12 +9,29 @@ import java.util.*;
 import java.util.function.Predicate;
 
 public class Database {
-    protected static final Map<String, Table> tables = new HashMap<>();
+    protected static Map<String, Table> tables = new HashMap<>();
     private final DaoAccessMethods dao = new DaoArrow();
+    private final Set<String> savedTables = new HashSet<>();
 
     public Database() { }
 
     public boolean save(Table table) {
+        savedTables.clear();
+        return saveTable(table);
+    }
+    public boolean readAll() {
+        tables = dao.readAllTables(this);
+        return true;
+    }
+    private boolean saveTable(Table table) {
+        if(table.relationShips != null) {
+            for(String tableName: table.relationShips.values()) {
+                if(!savedTables.contains(tableName)) {
+                    savedTables.add(tableName);
+                    saveTable(tables.get(tableName));
+                }
+            }
+        }
         return dao.saveTable(table);
     }
 
@@ -44,18 +61,6 @@ public class Database {
             }
         }
         return row;
-    }
-    public List<Row> find(String tableStr, Predicate<Row> predicate) {
-
-        return tables.get(tableStr).find(predicate);
-    }
-    public Row findFirst(String tableStr, Predicate<Row> predicate) {
-
-        return tables.get(tableStr).findFirst(predicate);
-    }
-    public Row findFirst(String tableStr, String column, Object value) {
-
-        return tables.get(tableStr).findFirst(column, value);
     }
     public Table getTable(String name) {
         if (!tables.containsKey(name)) {

@@ -17,6 +17,7 @@ import org.example.entities.Row;
 import org.example.entities.Table;
 import org.example.enums.DataType;
 import org.example.utilities.DataStructureUtilities;
+import org.example.utilities.HashMapConverter;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -24,6 +25,9 @@ import java.io.FileOutputStream;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 
 
 public class DaoArrow implements DaoAccessMethods {
@@ -33,7 +37,6 @@ public class DaoArrow implements DaoAccessMethods {
     @Override
     public boolean saveTable(Table table) {
         Schema arrowSchema = convertToArrowSchema(table);
-        System.out.println("Arrow schema: " + arrowSchema);
 
         try (BufferAllocator allocator = new RootAllocator(Long.MAX_VALUE)) {
             try (VectorSchemaRoot vectorSchemaRoot = VectorSchemaRoot.create(arrowSchema, allocator)) {
@@ -50,7 +53,6 @@ public class DaoArrow implements DaoAccessMethods {
                         if (value != null) {
                             if (vector instanceof IntVector) {
                                 ((IntVector) vector).setSafe(rowIndex, (Integer) value);
-                                System.out.println(value);
                             } else if (vector instanceof VarCharVector) {
                                 ((VarCharVector) vector).setSafe(rowIndex, ((String)value).getBytes(StandardCharsets.UTF_8));
                             }
@@ -96,6 +98,8 @@ public class DaoArrow implements DaoAccessMethods {
             schemaMetadata.put("primaryKeyColumn", primaryColumn);
         }
 
+        schemaMetadata.put("relationship", HashMapConverter.hashMapToString(table.getRelationShips()));
+
         return new Schema(fields, schemaMetadata);
     }
 
@@ -109,16 +113,15 @@ public class DaoArrow implements DaoAccessMethods {
     public Table read(String tableName, Database database) {
         Table.Builder tableBuilder = new Table.Builder();
         Table table = null;
-        Hashtable<Object, Row> hash = new Hashtable<>();
-
         try (RootAllocator allocator = new RootAllocator(Long.MAX_VALUE)) {
-            File file = new File(DATABASE_FOLDER_PATH + tableName + ".arrow");
+            File file = new File(DATABASE_FOLDER_PATH + tableName);
             try (FileInputStream fileInputStream = new FileInputStream(file);
                  FileChannel fileChannel = fileInputStream.getChannel();
                  ArrowFileReader reader = new ArrowFileReader(fileChannel, allocator)) {
 
                 VectorSchemaRoot root = reader.getVectorSchemaRoot();
                 Map<String, String> metaData = root.getSchema().getCustomMetadata();
+
                 while (reader.loadNextBatch()) {
                     List<FieldVector> fieldVectors = root.getFieldVectors();
                     for (FieldVector vector : fieldVectors) {
@@ -131,7 +134,7 @@ public class DaoArrow implements DaoAccessMethods {
 
                         tableBuilder.addColumn(colName, dataType, colIndexStrategy, isPrimaryKey);
                     }
-                    table = database.createTable(tableName, tableBuilder);
+                    table = database.createTable(tableName.replace(".arrow", ""), tableBuilder);
 
                     for (int i = 0; i < fieldVectors.getFirst().getValueCount(); i++) {
                         Row row = new Row();
@@ -140,8 +143,10 @@ public class DaoArrow implements DaoAccessMethods {
                         }
                         table.create(row);
                     }
-
                 }
+
+                assert table != null;
+                table.setRelationShips(HashMapConverter.stringToHashMap(metaData.get("relationship")));
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -149,12 +154,32 @@ public class DaoArrow implements DaoAccessMethods {
         return table;
     }
 
+    public Set<String> listFilesUsingJavaIO(String dir) {
+        return Stream.of(Objects.requireNonNull(new File(dir).listFiles()))
+                .filter(file -> !file.isDirectory())
+                .map(File::getName)
+                .collect(Collectors.toSet());
+    }
+
+    @Override
+    public Map<String, Table> readAllTables(Database db) {
+        Map<String, Table> tables = new HashMap<>();
+        Set<String> set = listFilesUsingJavaIO("database");
+        set.forEach(file -> {
+            Table table = read(file, db);
+            tables.put(table.getName(), table);
+        });
+        return tables;
+    }
+
     private Object getValueFromVector(FieldVector vector, int index) {
         if (vector instanceof IntVector) {
-            if(vector.isNull(index)) return null;
+            if (vector.isNull(index)) return null;
             return ((IntVector) vector).get(index);
         } else if (vector instanceof VarCharVector) {
-            return new String(((VarCharVector) vector).get(index));
+            if (vector.isNull(index)) return null;
+            byte[] bytes = ((VarCharVector) vector).get(index);
+            return new String(bytes, StandardCharsets.UTF_8); // Specify charset
         }
         return null;
     }

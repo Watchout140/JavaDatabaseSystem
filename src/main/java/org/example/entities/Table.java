@@ -37,7 +37,13 @@ public class Table {
          this.primaryKey = primaryKey;
          this.relationShips = relationsShips;
     }
+    public Map<String, String> getRelationShips() {
+         return relationShips;
+    }
 
+    public void setRelationShips(Map<String, String> relationShips) {
+         this.relationShips = relationShips;
+    }
     public void setName(String tableName) {
         this.tableName = tableName;
     }
@@ -77,7 +83,6 @@ public class Table {
                 if (column.isPrimary) {
                     if (!objectIndexStrategy.contains(key))
                         objectIndexStrategy.insert(key, row);
-                    else System.out.println("DUE SÄMST: " + key + " " + row);
                 }
                 else objectIndexStrategy.insert(key, value);
             });
@@ -99,24 +104,7 @@ public class Table {
         return matchingRows;
     }
 
-    public Row findFirst(Predicate<Row> predicate) {
-        for (Column<?, ?> column : columns.values()) {
-            if (column.indexStrategy.isPresent() && column.isPrimary) {
-                IndexStrategy<Object, Object> strategy = (IndexStrategy<Object, Object>) column.indexStrategy.get();
-                Optional<Row> firstMatch = strategy.getAllRecords().stream()
-                        .filter(obj -> obj instanceof Row)
-                        .map(obj -> (Row) obj)
-                        .filter(predicate)
-                        .findFirst();
-                if (firstMatch.isPresent()) {
-                    return firstMatch.get();
-                }
-            }
-        }
-        return null;
-    }
-
-    public Row find(Object primaryKeyValue) {
+    protected Row find(Object primaryKeyValue) {
         Column<?, ?> primaryKeyColumn = columns.get(primaryKey);
         if (primaryKeyColumn != null && primaryKeyColumn.indexStrategy.isPresent()) {
             IndexStrategy<Object, Object> strategy = (IndexStrategy<Object, Object>) primaryKeyColumn.indexStrategy.get();
@@ -128,7 +116,7 @@ public class Table {
         return null;
     }
 
-    public Row findFirst(String column, Object value) {
+    protected Row findFirst(String column, Object value) {
         Column<?,?> col = getColumn(column);
         Object foundVal = col.findByVal(value);
         if (column.equals(primaryKey)) {
@@ -136,20 +124,6 @@ public class Table {
         }
         Column<?,?> col2 = getColumn(primaryKey);
         return (Row)col2.findByVal(foundVal);
-    }
-
-    public List<Row> findAll(String column, Object value) {
-        Column<?,?> col = getColumn(column);
-        Object foundVal = col.findAllByVal(value);
-        List<Row> list = new ArrayList<>();
-        List<?> obj = (List<?>) foundVal;
-        if (column.equals(primaryKey)) {
-            return (List<Row>)foundVal;
-        }
-
-        Column<?,?> col2 = getColumn(primaryKey);
-        obj.forEach(o -> list.add((Row)col2.findByVal(o)));
-        return list;
     }
 
     private Column<?,?> getColumn(String column) {
@@ -201,15 +175,24 @@ public class Table {
             if(indexStrategy != null) this.indexStrategy = Optional.of((IndexStrategy<V, T>) indexStrategy);
         }
 
-        public Row getRow(Object index) {
-            return table.columns.get(table.primaryKey).indexStrategy.map(
-                    strategy -> (Row) strategy.findByPredicate(
-                            id -> id == index
-                    ).getFirst()
-            ).orElse(null);
+        private Row getRow(Object index) {
+            for(Object rowObj: table.columns.get(table.primaryKey).indexStrategy.get().getAllRecords()) {
+                Row row = ((Row)rowObj).copy();
+                for(Map.Entry<String, String> relation: table.relationShips.entrySet()) {
+                    Object relationId = row.get(relation.getKey());
+                    if(relationId == null) continue;
+                    Table relationTable = Database.tables.get(relation.getValue());
+                    Row relationRow = relationTable.findFirst(relationTable.primaryKey, row.get(relation.getKey()));
+                    row.set(relation.getKey(), relationRow);
+                }
+                if(index.equals((row).get(table.primaryKey))) {
+                    return row;
+                }
+            }
+            return null;
         }
 
-        public List<Row> getRows(Set<Object> indexes) {
+        private List<Row> getRows(Set<Object> indexes) {
             List<Row> matchingRows = new ArrayList<>();
             for(Object rowObj: table.columns.get(table.primaryKey).indexStrategy.get().getAllRecords()) {
                 Row row = ((Row)rowObj).copy();
@@ -262,6 +245,12 @@ public class Table {
 
         public List<Row> filter(Predicate<V> predicate) {
             return getRows(new HashSet<>(indexStrategy.get().findByPredicate(predicate)));
+        }
+
+        public Row findFirst(Predicate<V> predicate) {
+            List<T> list = indexStrategy.get().findByPredicate(predicate);
+            if(list.isEmpty()) return null;
+            return getRow(list.getFirst());
         }
 
         public Object findByVal(Object val) {
