@@ -2,8 +2,6 @@ package org.bumbibjornarna.jds.entities;
 
 import org.bumbibjornarna.jds.enums.DataType;
 import org.bumbibjornarna.jds.datastructures.IndexStrategy;
-import org.bumbibjornarna.jds.datastructures.IndexStrategyStream;
-import org.bumbibjornarna.jds.datastructures.SpeedStreamInterface;
 
 import org.bumbibjornarna.jds.utilities.DataStructureUtilities;
 
@@ -220,13 +218,6 @@ public class Table {
 
         public boolean isPrimaryKey() {
             return this.isPrimary;
-        }
-        public SpeedStreamInterface<V,T> Stream() {
-            if (indexStrategy.isPresent()) {
-                return new IndexStrategyStream<>(indexStrategy.get());
-            } else {
-                throw new IllegalStateException("Index strategy not available.");
-            }
         }
 
         private List<Row> getRowsFromIndex(List<T> indexes) {
